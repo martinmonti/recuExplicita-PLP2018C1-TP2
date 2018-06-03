@@ -23,15 +23,31 @@ tieneEstrella(or(X,Y)) :- tieneEstrella(Y),!.
 tieneEstrella(concat(X,Y)) :- tieneEstrella(X),!.
 tieneEstrella(concat(X,Y)) :- tieneEstrella(Y),!.
 
-testEj1_01() :- tieneEstrella(a).                 % Tiene que dar false.
-testEj1_02() :- tieneEstrella(or(a,b)).           % Tiene que dar false.
-testEj1_03() :- tieneEstrella(star(a)).           % Tiene que dar true.
-testEj1_04() :- tieneEstrella(or(a,star(b))).     % Tiene que dar true.
-testEj1_05() :- tieneEstrella(or(star(b),a)).     % Tiene que dar true.
- 
+testEj1() :- not(tieneEstrella(a))
+           , not(tieneEstrella(or(a,b)))
+           , tieneEstrella(star(a))
+           , tieneEstrella(or(a,star(b)))     
+           , tieneEstrella(or(star(b),a))      
+           , tieneEstrella(or(concat(star(a),b),c))
+           , tieneEstrella(star(concat(a,b))).    
+
 % Ejercicio 2: longitudMaxima(+RegEx, -Length)
 
-longitudMaxima(_, _) :- fail.
+longitudMaxima(X,N):- symbol(X),N is 1.
+longitudMaxima(empty,0).
+longitudMaxima(or(X,Y),N) :- longitudMaxima(X,LX), longitudMaxima(Y,LY),N is max(LX,LY).
+longitudMaxima(concat(X,Y),N) :- longitudMaxima(X,LX), longitudMaxima(Y,LY), N is LX + LY.
+
+testEj2() :-  longitudMaxima(empty,0)
+            , longitudMaxima(a,1)                    
+            , longitudMaxima(b,1)                      
+            , not(longitudMaxima(z,N))
+            , longitudMaxima(or(a,b),1)              
+            , longitudMaxima(concat(a,b),2)         
+            , longitudMaxima(concat(a,empty),1)    
+            , longitudMaxima(concat(or(a,b),b),2)  
+            , not(longitudMaxima(concat(or(a,star(b)),b),N)).
+
 
 % Ejercicio 3: cadena(?Cadena)
 
