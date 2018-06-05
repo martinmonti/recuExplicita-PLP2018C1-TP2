@@ -51,8 +51,9 @@ testEj2() :-  longitudMaxima(empty,0)
 
 % Ejercicio 3: cadena(?Cadena)
 
-cadena(_) :- fail.
-	
+cadena(C) :- C = [].
+cadena(C) :- cadena(L), symbol(X), C = [X|L].	
+
 % Ejercicio 4: match_inst(+Cadena, +RegEx)
 
 match_inst([],RE) :- RE = empty,!.
@@ -69,11 +70,11 @@ testEj4() :- match_inst([], empty)
 				,not(match_inst([b],a))
 				,not(match_inst([a], b))
 				,match_inst([b], b)
-				,not(match_inst([c], or(a, b))).
+				,not(match_inst([c], or(a, b)))
 				,match_inst([b], or(a, b))
-				,match_inst([ab],concat(a,b))
-				,not(match_inst([aab],concat(a,b)))
-				,not(match_inst([ac],concat(a,b)))
+				,match_inst([a,b],concat(a,b))
+				,not(match_inst([a,a,b],concat(a,b)))
+				,not(match_inst([a,c],concat(a,b)))
 				,match_inst([a, a, b], concat(star(a), b))
 				,not(match_inst([b, a], concat(star(a), b))).
 
