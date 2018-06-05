@@ -52,10 +52,30 @@ testEj2() :-  longitudMaxima(empty,0)
 % Ejercicio 3: cadena(?Cadena)
 
 cadena(_) :- fail.
-
+	
 % Ejercicio 4: match_inst(+Cadena, +RegEx)
 
-match_inst(_, _) :- fail.
+match_inst([],RE) :- RE = empty,!.
+match_inst([CH],RE) :- symbol(RE), CH = RE, !.
+match_inst(C,or(RE1,RE2)) :- match_inst(C,RE1),!.
+match_inst(C,or(RE1,RE2)) :- match_inst(C,RE2),!.
+match_inst(C,concat(RE1,RE2)):- prefix(PREF,C), append(PREF,SUF,C), match_inst(PREF,RE1),match_inst(SUF,RE2),!.
+match_inst(C,star(RE)) :- prefix(PREF,C), append(PREF,RESTO,C), match_inst(PREF,RE), match_inst(RESTO,empty),!.
+match_inst(C,star(RE)) :- prefix(PREF,C), append(PREF,RESTO,C), match_inst(PREF,RE), match_inst(RESTO,star(RE)),!.
+
+testEj4() :- match_inst([], empty)
+				,not(match_inst([a], empty))
+				,match_inst([a],a)
+				,not(match_inst([b],a))
+				,not(match_inst([a], b))
+				,match_inst([b], b)
+				,not(match_inst([c], or(a, b))).
+				,match_inst([b], or(a, b))
+				,match_inst([ab],concat(a,b))
+				,not(match_inst([aab],concat(a,b)))
+				,not(match_inst([ac],concat(a,b)))
+				,match_inst([a, a, b], concat(star(a), b))
+				,not(match_inst([b, a], concat(star(a), b))).
 
 % Ejercicio 5: match(?Cadena, +RegEx)
 
