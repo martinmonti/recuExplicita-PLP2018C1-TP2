@@ -51,8 +51,19 @@ testEj2() :-  longitudMaxima(empty,0)
 
 % Ejercicio 3: cadena(?Cadena)
 
-cadena(C) :- C = [].
-cadena(C) :- cadena(L), symbol(X), C = [X|L].	
+
+
+%cadenas(+L,+LMAX,+R,- C).
+cadenas(0,LMAX,[],[]).
+cadenas(LR,-1,R,C):- symbol(X), C=[X|R].
+cadenas(LR,-1,R,C):- L is LR+1,cadenas(L,LMAX,[X|R],C), symbol(X).
+cadenas(LR,LMAX,R,C):- LR @=< LMAX, symbol(X), C=[X|R].
+cadenas(LR,LMAX,R,C):- L is LR+1, L @< LMAX,cadenas(L,LMAX,[X|R],C), symbol(X).
+
+cadena(C) :- ground(C),is_set(C),sort(C,ORDC),simbolos(SIMBOLOS),sort(SIMBOLOS,ORD_SIMBOLOS),ORDC=ORD_SIMBOLOS,!.
+cadena(C) :- var(C),cadenas(0,-1,[],C).
+
+simbolos(C) :- findall(X,symbol(X),C).
 
 % Ejercicio 4: match_inst(+Cadena, +RegEx)
 
@@ -80,7 +91,9 @@ testEj4() :- match_inst([], empty)
 
 % Ejercicio 5: match(?Cadena, +RegEx)
 
-match(_, _) :- fail.
+match(C,REGEX) :- ground(C),match_inst(C,REGEX).
+match(C,REGEX) :- var(C),tieneEstrella(REGEX),cadena(C),match_inst(C,REGEX).
+match(C,REGEX) :- var(C),not(tieneEstrella(REGEX)),longitudMaxima(REGEX,MAXL),cadenas(0,MAXL,[],C),match_inst(C,REGEX).
 
 % Ejercicio 6: diferencia(?Cadena, +RegEx, +RegEx)
 
