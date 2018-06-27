@@ -105,8 +105,25 @@ diferencia(C,R1,R2) :- var(C), cadenasCandidatasParaRegEx(C,R1),match_inst(C,R1)
 
 % Ejercicio 7: prefijoMaximo(?Prefijo, +Cadena, +RegEx)
 
-prefijoMaximo(_, _, _) :- fail.
+prefijoMaximo(MAX_PREF,CADENA,REGEX) :- 
+	 findall(PREF,esPrefijoYMatchea(PREF,CADENA,REGEX),PREFIJOS) % Recolecto prefijos que matchean
+	,length(PREFIJOS,CANT_PREFIJOS),CANT_PREFIJOS>0			% Hay al menos un prefijo que matchea
+	,encontrarListaMayor(PREFIJOS,[],MAX_PREF).				% MAX_PREF es el más extenso de los prefijos que matchean.
+
+% Devuelve la lista mayor de una lista de listas dada.
+% Invocar con encontrarListaMayor(LISTAS,[],RESULTADO).
+% LISTAS debe no ser vacía.
+encontrarListaMayor([],LAUX,LAUX).
+encontrarListaMayor([L|LS],LAUX,L_MAX):- length(L,NL),length(LAUX,NLAUX),NL<NLAUX,encontrarListaMayor(LS,LAUX,L_MAX),!.
+encontrarListaMayor([L|LS],LAUX,L_MAX):- length(L,NL),length(LAUX,NLAUX),NL=:=NLAUX,encontrarListaMayor(LS,LAUX,L_MAX),!.
+encontrarListaMayor([L|LS],LAUX,L_MAX):- length(L,NL),length(LAUX,NLAUX),NL>NLAUX,encontrarListaMayor(LS,L,L_MAX).
+
+esPrefijoYMatchea(PREF,CADENA,REGEX):- prefix(PREF,CADENA), match_inst(PREF,REGEX).
+
 
 % Ejercicio 8: reemplazar(+X, +R, +E, Res)
 
 reemplazar(_, _, _, _) :- fail.
+
+
+
