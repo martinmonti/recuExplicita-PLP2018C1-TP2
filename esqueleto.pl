@@ -123,7 +123,15 @@ esPrefijoYMatchea(PREF,CADENA,REGEX):- prefix(PREF,CADENA), match_inst(PREF,REGE
 
 % Ejercicio 8: reemplazar(+X, +R, +E, Res)
 
-reemplazar(_, _, _, _) :- fail.
+reemplazar(CADENA,REGEX,REEMPLAZO,CADENA):-
+ findall(S,substringQueMatchea(CADENA,REGEX,S),SS)  % Recolecto substrings que matchean
+,length(SS,LSS),LSS=:=0,!.                          % Y Verifico que no haya ninguno
 
+reemplazar(CADENA,REGEX,REEMPLAZO,RESULTADO):-
+ findall(S,substringQueMatchea(CADENA,REGEX,S),SS)             % Recolecto substrings que matchean
+,length(SS,LSS),LSS>0                                          % Verifico que haya al menos uno
+,encontrarListaMayor(SS,[],MAX_S)                              % Busco la mayor lista reemplazable
+,append([PRE,MAX_S,POST],CADENA),append([PRE,REEMPLAZO,POST],CADENA_CON_REEMPLAZO_HECHO) % La reemplazo propiamente
+,reemplazar(CADENA_CON_REEMPLAZO_HECHO,REGEX,REEMPLAZO,RESULTADO),!.
 
-
+substringQueMatchea(Cadena,Regex,SubStringMatch):-CS=[C1|R1],R1=[SubStringMatch|R2],R2=[C3],append(CS,Cadena),match_inst(SubStringMatch,Regex).
