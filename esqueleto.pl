@@ -193,11 +193,28 @@ reemplazar(CADENA,REGEX,REEMPLAZO,RESULTADO):-
  findall(S,substringQueMatchea(CADENA,REGEX,S),SS)             % Recolecto substrings que matchean
 ,length(SS,LSS),LSS>0                                          % Verifico que haya al menos uno
 ,encontrarListaMayor(SS,[],MAX_S)                              % Busco la mayor lista reemplazable
-,append([PRE,MAX_S,POST],CADENA),append([PRE,REEMPLAZO,POST],CADENA_CON_REEMPLAZO_HECHO) % La reemplazo propiamente
-,reemplazar(CADENA_CON_REEMPLAZO_HECHO,REGEX,REEMPLAZO,RESULTADO),!.
+,asegurarQueSeaLista(REEMPLAZO,REEMPLAZO_L)							% Aseguro que la cadena reemplazo sea lista para que funcione el append
+,append([PRE,MAX_S,POST],CADENA),append([PRE,REEMPLAZO_L,POST],CADENA_CON_REEMPLAZO_HECHO) % La reemplazo propiamente
+,reemplazar(CADENA_CON_REEMPLAZO_HECHO,REGEX,REEMPLAZO_L,RESULTADO),!.  						 % Y sigo buscando ...
 
-substringQueMatchea(Cadena,Regex,SubStringMatch):-CS=[C1|R1],R1=[SubStringMatch|R2],R2=[C3],append(CS,Cadena),match_inst(SubStringMatch,Regex).
+substringQueMatchea(Cadena,Regex,SubStringMatch):-
+  CS=[C1|R1],R1=[SubStringMatch|R2],R2=[C3]					% Recolecto todas las subcadenas de Cadena ...
+  ,append(CS,Cadena),match_inst(SubStringMatch,Regex)    % ... que cumplan el patrón de la Regex ...
+  ,length(SubStringMatch,L),L>0.									% ... y no sean la cadena vacía.
 
-testEj8() :- reemplazar([a,b],a,[c],[c,b])
+asegurarQueSeaLista(R,R):-is_list(R),!.
+asegurarQueSeaLista(R,R_L):- not(is_list(R)),R_L = [R].
+
+testEj8() :- reemplazar([a,b,c],empty,1,[a,b,c])
+           , reemplazar([a,b,c,b,c],or(a,b),1,[1,1,c,1,c])
+           , reemplazar([a,b,c,b,c],or(a,b),[1,2],[1,2,1,2,c,1,2,c])
+           , reemplazar([a,b,c,b,c],concat(a,b),[1,2],[1,2,c,b,c])
+           , reemplazar([a,b,c,b,c],concat(a,b),[],[c,b,c])
+           , reemplazar([a,b,c,b,a,b,c],concat(a,b),[],[c,b,c])
+           , reemplazar([a,b],a,c,[c,b])
+           , reemplazar([a,b],a,[c],[c,b])
+           , reemplazar([a,a,a,b,b],concat(star(a),b),1,[1,1])
            , reemplazar([a,a,a,b,b],concat(star(a),b),[1],[1,1])
-           .
+           , reemplazar([a,a,a,b,b,a,b,c],concat(star(a),star(b)),[1],[1,1,c])
+			  , reemplazar([c,a,a,a,c],star(a),[1],[c,1,c])
+			  , reemplazar([c,a,a,a,c,a,a,c],star(a),[1],[c,1,c,1,c]).
