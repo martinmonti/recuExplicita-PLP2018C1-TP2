@@ -17,11 +17,11 @@ regexEj(9, star(or(star(a), star(b)))).
 
 % Ejercicio 1: tieneEstrella(+RegEx)
 
-tieneEstrella(star(X)) :- true.
-tieneEstrella(or(X,Y)) :- tieneEstrella(X),!.
-tieneEstrella(or(X,Y)) :- tieneEstrella(Y),!. 
-tieneEstrella(concat(X,Y)) :- tieneEstrella(X),!.
-tieneEstrella(concat(X,Y)) :- tieneEstrella(Y),!.
+tieneEstrella(star(_)) :- true.
+tieneEstrella(or(X,_)) :- tieneEstrella(X),!.
+tieneEstrella(or(_,Y)) :- tieneEstrella(Y),!. 
+tieneEstrella(concat(X,_)) :- tieneEstrella(X),!.
+tieneEstrella(concat(_,Y)) :- tieneEstrella(Y),!.
 
 testEj1() :- not(tieneEstrella(a))
            , not(tieneEstrella(or(a,b)))
@@ -50,29 +50,31 @@ testEj2() :-  longitudMaxima(empty,0)
 
 
 % Ejercicio 3: cadena(?Cadena)
-cadena(C) :- ground(C),is_set(C),sort(C,ORDC),simbolos(SIMBOLOS),sort(SIMBOLOS,ORD_SIMBOLOS),ORDC=ORD_SIMBOLOS,!.
-cadena(C) :- var(C),cadenas(0,-1,[],C).
+cadena(C):- nonvar(C),append(R,[S],C),symbol(S),cadena(R),!.
+cadena([]).
+cadena(C) :- append(R,[S],C),cadena(R),symbol(S).
 
-%cadenas(+LR,+LMAX,+R,- C).
-% Instancia C como todas las posibles cadenas de símbolos válidos, de longitud
-% mínima LR y máxima LMAX. Pasar R con valor [].
-cadenas(0,LMAX,[],[]).
-cadenas(LR,-1,R,C):- symbol(X), C=[X|R].
-cadenas(LR,-1,R,C):- L is LR+1,cadenas(L,LMAX,[X|R],C), symbol(X).
-cadenas(LR,LMAX,R,C):- LR @=< LMAX, symbol(X), C=[X|R].
-cadenas(LR,LMAX,R,C):- L is LR+1, L @< LMAX,cadenas(L,LMAX,[X|R],C), symbol(X).
-
-%simbolos(-C) :- Devuelve en C una lista de los símbolos disponibles
-simbolos(C) :- findall(X,symbol(X),C).
+testEj3() :- cadena([])
+           , cadena([a])
+           , cadena([b])
+           , cadena([c])
+           , cadena([a,a])
+           , cadena([a,b])
+           , cadena([a,c])
+           , cadena([b,a])
+           , cadena([b,b])
+           , cadena([b,a])
+           , not(cadena([a,d]))
+			  .
 
 % Ejercicio 4: match_inst(+Cadena, +RegEx)
 
 match_inst([],empty) :- !.
-match_inst([CH],RE) :- symbol(RE), CH = RE, !.
-match_inst(C,or(RE1,RE2)) :- match_inst(C,RE1),!.
-match_inst(C,or(RE1,RE2)) :- match_inst(C,RE2),!.
+match_inst([CH],CH) :- symbol(CH),!.
+match_inst(C,or(RE1,_)) :- match_inst(C,RE1),!.
+match_inst(C,or(_,RE2)) :- match_inst(C,RE2),!.
 match_inst(C,concat(RE1,RE2)):- prefix(PREF,C), append(PREF,SUF,C), match_inst(PREF,RE1),match_inst(SUF,RE2),!.
-match_inst([],star(RE)):-!.
+match_inst([],star(_)):-!.
 match_inst(C,star(RE)) :- prefix(PREF,C), append(PREF,RESTO,C), match_inst(PREF,RE), match_inst(RESTO,empty),!.
 match_inst(C,star(RE)) :- prefix(PREF,C), append(PREF,RESTO,C), match_inst(PREF,RE), match_inst(RESTO,star(RE)),!.
 
@@ -113,9 +115,9 @@ testEj4() :- match_inst([], empty)
 match(C,REGEX) :- ground(C),match_inst(C,REGEX),!.
 match(C,REGEX) :- var(C),cadenasCandidatasParaRegEx(C,REGEX),match_inst(C,REGEX).
 
-%cadenasCandidatasParaRegEx(-C,+REGEX). Devuelve todas las cadenas que podrían, por su longitud, aplicar a REGEX.
-cadenasCandidatasParaRegEx(C,REGEX) :- tieneEstrella(REGEX),cadena(C).
-cadenasCandidatasParaRegEx(C,REGEX) :- not(tieneEstrella(REGEX)),longitudMaxima(REGEX,MAXL),cadenas(0,MAXL,[],C).
+%Precondición: TopeMaximo >= 0
+cadena([],_).
+cadena(C,TopeMaximo) :- cadena(R),symbol(S),length(R,LR),LR<TopeMaximo,append(R,[S],C).
 
 testEj5() :- match([], empty)
 				,not(match([a], empty))
