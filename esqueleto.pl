@@ -50,7 +50,6 @@ testEj2() :-  longitudMaxima(empty,0)
 
 
 % Ejercicio 3: cadena(?Cadena)
-cadena(C):- nonvar(C),append(R,[S],C),symbol(S),cadena(R),!.
 cadena([]).
 cadena(C) :- append(R,[S],C),cadena(R),symbol(S).
 
@@ -64,8 +63,7 @@ testEj3() :- cadena([])
            , cadena([b,a])
            , cadena([b,b])
            , cadena([b,a])
-           , not(cadena([a,d]))
-			  .
+           , not(cadena([a,d])).
 
 % Ejercicio 4: match_inst(+Cadena, +RegEx)
 
@@ -73,10 +71,10 @@ match_inst([],empty) :- !.
 match_inst([CH],CH) :- symbol(CH),!.
 match_inst(C,or(RE1,_)) :- match_inst(C,RE1),!.
 match_inst(C,or(_,RE2)) :- match_inst(C,RE2),!.
-match_inst(C,concat(RE1,RE2)):- prefix(PREF,C), append(PREF,SUF,C), match_inst(PREF,RE1),match_inst(SUF,RE2),!.
+match_inst(C,concat(RE1,RE2)):- append(PREF,SUF,C), match_inst(PREF,RE1),match_inst(SUF,RE2),!.
 match_inst([],star(_)):-!.
-match_inst(C,star(RE)) :- prefix(PREF,C), append(PREF,RESTO,C), match_inst(PREF,RE), match_inst(RESTO,empty),!.
-match_inst(C,star(RE)) :- prefix(PREF,C), append(PREF,RESTO,C), match_inst(PREF,RE), match_inst(RESTO,star(RE)),!.
+match_inst(C,star(RE)) :- append(PREF,RESTO,C), match_inst(PREF,RE), match_inst(RESTO,empty),!.
+match_inst(C,star(RE)) :- append(PREF,RESTO,C), match_inst(PREF,RE), match_inst(RESTO,star(RE)),!.
 
 testEj4() :- match_inst([], empty)
 				,not(match_inst([a], empty))
@@ -108,16 +106,31 @@ testEj4() :- match_inst([], empty)
 				,not(match_inst([a,b,a,b,a],star(concat(a,b))))
 				,not(match_inst([a,c,b],star(concat(a,b))))
 				,not(match_inst([b,a],star(concat(a,b))))
-				,not(match_inst([a,a,b,b],star(concat(a,b)))).
+				,not(match_inst([a,a,b,b],star(concat(a,b))))
+				,match_inst([],star(or(a,b)))
+				,match_inst([a],star(or(a,b)))
+				,match_inst([b],star(or(a,b)))
+				,match_inst([a,a],star(or(a,b)))
+				,match_inst([b,b],star(or(a,b)))
+				,match_inst([a,a,b,b],star(or(a,b)))
+				,match_inst([a,b,b,b],star(or(a,b)))
+				,match_inst([b,a,b,a],star(or(a,b)))
+				,match_inst([a,a,b,b,a],star(or(a,b)))
+				,not(match_inst([c],star(or(a,b))))
+				,not(match_inst([a,a,c,b,b],star(or(a,b))))
+				,not(match_inst([a,c,b,b],star(or(a,b)))) .
 
 % Ejercicio 5: match(?Cadena, +RegEx)
 
-match(C,REGEX) :- ground(C),match_inst(C,REGEX),!.
-match(C,REGEX) :- var(C),cadenasCandidatasParaRegEx(C,REGEX),match_inst(C,REGEX).
+match(C,RegEx) :- cadenaCandidataParaRegEx(C,RegEx),match_inst(C,RegEx).
 
-%Precondición: TopeMaximo >= 0
+%cadenaCandidataParaRegEx(?C,+RegEx). Es verdadero sii C es cadena candidata por su longitud para RegEx
+cadenaCandidataParaRegEx(C,RegEx):-longitudMaxima(RegEx,LongitudMaxima),cadena(C,LongitudMaxima).
+cadenaCandidataParaRegEx(C,RegEx):-not(longitudMaxima(RegEx,_)),cadena(C).
+
+%cadena(-C,+LongitudMaxima). Precondición: LongitudMaxima >= 0
 cadena([],_).
-cadena(C,TopeMaximo) :- cadena(R),symbol(S),length(R,LR),LR<TopeMaximo,append(R,[S],C).
+cadena([S|R],LongitudMaxima):- LongitudMaxima > 0,cadena(R,LongitudMaxima-1),symbol(S).
 
 testEj5() :- match([], empty)
 				,not(match([a], empty))
@@ -135,8 +148,7 @@ testEj5() :- match([], empty)
 
 % Ejercicio 6: diferencia(?Cadena, +RegEx, +RegEx)
 
-diferencia(C,R1,R2) :- ground(C),match_inst(C,R1),not(match_inst(C,R2)),!.
-diferencia(C,R1,R2) :- var(C), cadenasCandidatasParaRegEx(C,R1),match_inst(C,R1),not(match_inst(C,R2)).
+diferencia(C,R1,R2) :- cadenaCandidataParaRegEx(C,R1),match_inst(C,R1),not(match_inst(C,R2)).
 
 testEj6() :- diferencia([a],star(a),empty)
            , diferencia([a,a],star(a),empty)
