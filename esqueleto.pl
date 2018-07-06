@@ -15,13 +15,76 @@ regexEj(8, concat(star(a), star(b))). %a*b*
 regexEj(9, star(or(star(a), star(b)))).
 
 
-% Ejercicio 1: tieneEstrella(+RegEx)
-
+% Ejercicio 1: tieneEstrella(+Regex)
 tieneEstrella(star(_)) :- true.
 tieneEstrella(or(X,_)) :- tieneEstrella(X),!.
 tieneEstrella(or(_,Y)) :- tieneEstrella(Y),!. 
 tieneEstrella(concat(X,_)) :- tieneEstrella(X),!.
 tieneEstrella(concat(_,Y)) :- tieneEstrella(Y),!.
+
+% Ejercicio 2: longitudMaxima(+Regex, -Length)
+longitudMaxima(X,N):- symbol(X),N is 1.
+longitudMaxima(empty,0).
+longitudMaxima(or(X,Y),N) :- longitudMaxima(X,LX), longitudMaxima(Y,LY),N is max(LX,LY).
+longitudMaxima(concat(X,Y),N) :- longitudMaxima(X,LX), longitudMaxima(Y,LY), N is LX + LY.
+
+% Ejercicio 3: cadena(?Cadena)
+cadena([]).
+cadena(C) :- append(R,[S],C),cadena(R),symbol(S).
+
+% Ejercicio 4: match_inst(+Cadena, +Regex)
+match_inst([],empty) :- !.
+match_inst([CH],CH) :- symbol(CH),!.
+match_inst(C,or(RE1,_)) :- match_inst(C,RE1),!.
+match_inst(C,or(_,RE2)) :- match_inst(C,RE2),!.
+match_inst(C,concat(RE1,RE2)):- append(PREF,SUF,C), match_inst(PREF,RE1),match_inst(SUF,RE2),!.
+match_inst([],star(_)):-!.
+match_inst(C,star(RE)) :- append(PREF,RESTO,C), match_inst(PREF,RE), match_inst(RESTO,empty),!.
+match_inst(C,star(RE)) :- append(PREF,RESTO,C), match_inst(PREF,RE), match_inst(RESTO,star(RE)),!.
+
+
+% Ejercicio 5: match(?Cadena, +Regex)
+match(C,Regex) :- cadenaCandidataParaRegex(C,Regex),match_inst(C,Regex).
+
+%cadenaCandidataParaRegex(?C,+Regex). Es verdadero sii C es cadena candidata por su longitud para Regex
+cadenaCandidataParaRegex(C,Regex):-longitudMaxima(Regex,LongitudMaxima),cadena(C,LongitudMaxima).
+cadenaCandidataParaRegex(C,Regex):-not(longitudMaxima(Regex,_)),cadena(C).
+
+%cadena(?C,+LongitudMaxima). Precondición: LongitudMaxima >= 0
+cadena([],_).
+cadena([S|R],LongitudMaxima):- LongitudMaxima > 0,cadena(R,LongitudMaxima-1),symbol(S).
+
+% Ejercicio 6: diferencia(?Cadena, +Regex, +Regex)
+diferencia(C,R1,R2) :- cadenaCandidataParaRegex(C,R1),match_inst(C,R1),not(match_inst(C,R2)).
+
+% Ejercicio 7: prefijoMaximo(?Prefijo, +Cadena, +Regex)
+prefijoMaximo(MaxPref,Cadena,Regex):- prefix(MaxPref,Cadena),match_inst(MaxPref,Regex)
+,length(MaxPref,L),not(prefijoMayor(Cadena,Regex,L,OtroPrefijo)).
+
+%prefijoMayor(+Cadena,+Regex,+Long,?OtroPrefijo). 
+%Verdadero cuando OtroPrefijo es un prefijo de Cadena que matchea con Regex y su longitud es mayor a Long
+prefijoMayor(Cadena,Regex,Long,OtroPrefijo):- prefix(OtroPrefijo,Cadena),match_inst(OtroPrefijo,Regex),length(OtroPrefijo,L),L>Long.
+
+% Ejercicio 8: reemplazar(+X, +R, +E, Res)
+
+reemplazar([],_,_,[]):-!.								  % Caso de Cadena vacía
+
+% Caso en que el máximo prefijo que matchea NO es []
+reemplazar(Cadena,Regex,Reemplazo,Resultado):-  
+	 prefijoMaximo(PrefMaximo,Cadena,Regex), not(PrefMaximo=[])
+	,asegurarQueSeaLista(Reemplazo,ReemplazoL)	% Detalle de Implementación para que funcione el append
+	,append(PrefMaximo,Resto,Cadena),reemplazar(Resto,Regex,Reemplazo,RestoReemplazado)	
+	,append(ReemplazoL,RestoReemplazado,Resultado),!. 	
+
+% Caso en que No hay Máximo Prefijo que matchea, o éste existe, pero es [].
+reemplazar([H|Tail],Regex,Reemplazo,Resultado):- reemplazar(Tail,Regex,Reemplazo,ResTail),Resultado=[H|ResTail].		
+
+asegurarQueSeaLista(R,R):-is_list(R),!.
+asegurarQueSeaLista(R,R_L):- not(is_list(R)),R_L = [R].
+
+% -------------------------------- TESTS: ------------------------------------------------------------
+
+testTodo():- testEj1(),testEj2(),testEj3(),testEj4(),testEj5(),testEj6(),testEj7(),testEj8().
 
 testEj1() :- not(tieneEstrella(a))
            , not(tieneEstrella(or(a,b)))
@@ -30,13 +93,6 @@ testEj1() :- not(tieneEstrella(a))
            , tieneEstrella(or(star(b),a))      
            , tieneEstrella(or(concat(star(a),b),c))
            , tieneEstrella(star(concat(a,b))).    
-
-% Ejercicio 2: longitudMaxima(+RegEx, -Length)
-
-longitudMaxima(X,N):- symbol(X),N is 1.
-longitudMaxima(empty,0).
-longitudMaxima(or(X,Y),N) :- longitudMaxima(X,LX), longitudMaxima(Y,LY),N is max(LX,LY).
-longitudMaxima(concat(X,Y),N) :- longitudMaxima(X,LX), longitudMaxima(Y,LY), N is LX + LY.
 
 testEj2() :-  longitudMaxima(empty,0)
             , longitudMaxima(a,1)                    
@@ -47,11 +103,6 @@ testEj2() :-  longitudMaxima(empty,0)
             , longitudMaxima(concat(a,empty),1)    
             , longitudMaxima(concat(or(a,b),b),2)  
             , not(longitudMaxima(concat(or(a,star(b)),b),N)).
-
-
-% Ejercicio 3: cadena(?Cadena)
-cadena([]).
-cadena(C) :- append(R,[S],C),cadena(R),symbol(S).
 
 testEj3() :- cadena([])
            , cadena([a])
@@ -64,17 +115,6 @@ testEj3() :- cadena([])
            , cadena([b,b])
            , cadena([b,a])
            , not(cadena([a,d])).
-
-% Ejercicio 4: match_inst(+Cadena, +RegEx)
-
-match_inst([],empty) :- !.
-match_inst([CH],CH) :- symbol(CH),!.
-match_inst(C,or(RE1,_)) :- match_inst(C,RE1),!.
-match_inst(C,or(_,RE2)) :- match_inst(C,RE2),!.
-match_inst(C,concat(RE1,RE2)):- append(PREF,SUF,C), match_inst(PREF,RE1),match_inst(SUF,RE2),!.
-match_inst([],star(_)):-!.
-match_inst(C,star(RE)) :- append(PREF,RESTO,C), match_inst(PREF,RE), match_inst(RESTO,empty),!.
-match_inst(C,star(RE)) :- append(PREF,RESTO,C), match_inst(PREF,RE), match_inst(RESTO,star(RE)),!.
 
 testEj4() :- match_inst([], empty)
 				,not(match_inst([a], empty))
@@ -120,18 +160,6 @@ testEj4() :- match_inst([], empty)
 				,not(match_inst([a,a,c,b,b],star(or(a,b))))
 				,not(match_inst([a,c,b,b],star(or(a,b)))) .
 
-% Ejercicio 5: match(?Cadena, +RegEx)
-
-match(C,RegEx) :- cadenaCandidataParaRegEx(C,RegEx),match_inst(C,RegEx).
-
-%cadenaCandidataParaRegEx(?C,+RegEx). Es verdadero sii C es cadena candidata por su longitud para RegEx
-cadenaCandidataParaRegEx(C,RegEx):-longitudMaxima(RegEx,LongitudMaxima),cadena(C,LongitudMaxima).
-cadenaCandidataParaRegEx(C,RegEx):-not(longitudMaxima(RegEx,_)),cadena(C).
-
-%cadena(-C,+LongitudMaxima). Precondición: LongitudMaxima >= 0
-cadena([],_).
-cadena([S|R],LongitudMaxima):- LongitudMaxima > 0,cadena(R,LongitudMaxima-1),symbol(S).
-
 testEj5() :- match([], empty)
 				,not(match([a], empty))
 				,match([a],a)
@@ -145,10 +173,6 @@ testEj5() :- match([], empty)
 				,not(match([a,c],concat(a,b)))
 				,match([a, a, b], concat(star(a), b))
 				,not(match([b, a], concat(star(a), b))).
-
-% Ejercicio 6: diferencia(?Cadena, +RegEx, +RegEx)
-
-diferencia(C,R1,R2) :- cadenaCandidataParaRegEx(C,R1),match_inst(C,R1),not(match_inst(C,R2)).
 
 testEj6() :- diferencia([a],star(a),empty)
            , diferencia([a,a],star(a),empty)
@@ -168,23 +192,6 @@ testEj6() :- diferencia([a],star(a),empty)
 			  , not(diferencia([c,a],star(or(a,b)),star(b)))
 			  , not(diferencia([c,b],star(or(a,b)),star(b))) .
 
-% Ejercicio 7: prefijoMaximo(?Prefijo, +Cadena, +RegEx)
-
-prefijoMaximo(MAX_PREF,CADENA,REGEX) :- 
-	 findall(PREF,esPrefijoYMatchea(PREF,CADENA,REGEX),PREFIJOS) % Recolecto prefijos que matchean
-	,length(PREFIJOS,CANT_PREFIJOS),CANT_PREFIJOS>0			% Hay al menos un prefijo que matchea
-	,encontrarListaMayor(PREFIJOS,[],MAX_PREF).				% MAX_PREF es el más extenso de los prefijos que matchean.
-
-% Devuelve la lista mayor de una lista de listas dada.
-% Invocar con encontrarListaMayor(LISTAS,[],RESULTADO).
-% LISTAS debe no ser vacía.
-encontrarListaMayor([],LAUX,LAUX).
-encontrarListaMayor([L|LS],LAUX,L_MAX):- length(L,NL),length(LAUX,NLAUX),NL<NLAUX,encontrarListaMayor(LS,LAUX,L_MAX),!.
-encontrarListaMayor([L|LS],LAUX,L_MAX):- length(L,NL),length(LAUX,NLAUX),NL=:=NLAUX,encontrarListaMayor(LS,LAUX,L_MAX),!.
-encontrarListaMayor([L|LS],LAUX,L_MAX):- length(L,NL),length(LAUX,NLAUX),NL>NLAUX,encontrarListaMayor(LS,L,L_MAX).
-
-esPrefijoYMatchea(PREF,CADENA,REGEX):- prefix(PREF,CADENA), match_inst(PREF,REGEX).
-
 testEj7() :-  prefijoMaximo([a,a,a],[a,a,a,b],star(a))
             , not(prefijoMaximo([],[a,a,a,b],star(a)))
             , not(prefijoMaximo([a],[a,a,a,b],star(a)))
@@ -196,30 +203,23 @@ testEj7() :-  prefijoMaximo([a,a,a],[a,a,a,b],star(a))
             , not(prefijoMaximo([a,a,a],[a,a,a,b,b,a],concat(star(a),star(b))))
             , not(prefijoMaximo([a,a,a,b,b,a],[a,a,a,b,b,a],concat(star(a),star(b)))).
 
-
-% Ejercicio 8: reemplazar(+X, +R, +E, Res)
-
-reemplazar(CADENA,REGEX,REEMPLAZO,CADENA):-
- findall(S,substringQueMatchea(CADENA,REGEX,S),SS)  % Recolecto substrings que matchean
-,length(SS,LSS),LSS=:=0,!.                          % Y Verifico que no haya ninguno
-
-reemplazar(CADENA,REGEX,REEMPLAZO,RESULTADO):-
- findall(S,substringQueMatchea(CADENA,REGEX,S),SS)             % Recolecto substrings que matchean
-,length(SS,LSS),LSS>0                                          % Verifico que haya al menos uno
-,encontrarListaMayor(SS,[],MAX_S)                              % Busco la mayor lista reemplazable
-,asegurarQueSeaLista(REEMPLAZO,REEMPLAZO_L)							% Aseguro que la cadena reemplazo sea lista para que funcione el append
-,append([PRE,MAX_S,POST],CADENA),append([PRE,REEMPLAZO_L,POST],CADENA_CON_REEMPLAZO_HECHO) % La reemplazo propiamente
-,reemplazar(CADENA_CON_REEMPLAZO_HECHO,REGEX,REEMPLAZO_L,RESULTADO),!.  						 % Y sigo buscando ...
-
-substringQueMatchea(Cadena,Regex,SubStringMatch):-
-  CS=[C1|R1],R1=[SubStringMatch|R2],R2=[C3]					% Recolecto todas las subcadenas de Cadena ...
-  ,append(CS,Cadena),match_inst(SubStringMatch,Regex)    % ... que cumplan el patrón de la Regex ...
-  ,length(SubStringMatch,L),L>0.									% ... y no sean la cadena vacía.
-
-asegurarQueSeaLista(R,R):-is_list(R),!.
-asegurarQueSeaLista(R,R_L):- not(is_list(R)),R_L = [R].
-
 testEj8() :- reemplazar([a,b,c],empty,1,[a,b,c])
+			  , reemplazar([a,b,b],or(a,b),1,[1,1,1])
+			  , reemplazar([a,b,c],or(a,b),1,[1,1,c])
+			  , reemplazar([a,c,b],or(a,b),1,[1,c,1])
+			  , reemplazar([c,c,c],or(a,b),1,[c,c,c])
+			  , reemplazar([a,b,b],star(or(a,b)),1,[1])
+			  , reemplazar([a,b,c],star(or(a,b)),1,[1,c])
+			  , reemplazar([a,c,b],star(or(a,b)),1,[1,c,1])
+			  , reemplazar([c,c,c],star(or(a,b)),1,[c,c,c])
+			  , reemplazar([a,b,a,c,a,a,b,b,c],star(or(a,b)),1,[1,c,1,c])
+			  , reemplazar([c,b,a,c,a,a,b,b,a],star(or(a,b)),1,[c,1,c,1])
+			  , reemplazar([c,b,a,c,a,a,b,b,c],star(or(a,b)),1,[c,1,c,1,c])
+			  , reemplazar([a,b,a,c,a,a,b,b,a],star(or(a,b)),1,[1,c,1])
+			  , reemplazar([c,b,a,a,a,b,b,c],star(or(a,b)),1,[c,1,c])
+			  , reemplazar([c,b,a,c,c,c,a,a,b,b,c],star(or(a,b)),1,[c,1,c,c,c,1,c])
+			  , reemplazar([c,b,a,c,c,c,a,a,b,b],star(or(a,b)),1,[c,1,c,c,c,1])
+			  , reemplazar([b,a,c,c,c,a,a,b,b,c],star(or(a,b)),1,[1,c,c,c,1,c])
            , reemplazar([a,b,c,b,c],or(a,b),1,[1,1,c,1,c])
            , reemplazar([a,b,c,b,c],or(a,b),[1,2],[1,2,1,2,c,1,2,c])
            , reemplazar([a,b,c,b,c],concat(a,b),[1,2],[1,2,c,b,c])
@@ -231,4 +231,9 @@ testEj8() :- reemplazar([a,b,c],empty,1,[a,b,c])
            , reemplazar([a,a,a,b,b],concat(star(a),b),[1],[1,1])
            , reemplazar([a,a,a,b,b,a,b,c],concat(star(a),star(b)),[1],[1,1,c])
 			  , reemplazar([c,a,a,a,c],star(a),[1],[c,1,c])
-			  , reemplazar([c,a,a,a,c,a,a,c],star(a),[1],[c,1,c,1,c]).
+			  , reemplazar([c,a,a,a,c,a,a,c],star(a),[1],[c,1,c,1,c])
+			  , reemplazar([a,b,a,c,c,a,c,a,b,b,c],star(or(a,b)),1,[1,c,c,1,c,1,c])
+			  , reemplazar([c,c,a,b,a,c,c,a,c,a,b,b,c],star(or(a,b)),1,[c,c,1,c,c,1,c,1,c])
+			  , reemplazar([a,b,a,c,c,a,c,a,b,b],star(or(a,b)),1,[1,c,c,1,c,1])
+			  , reemplazar([a,b,a,c,c,c,a,b,b,c],star(or(a,b)),1,[1,c,c,c,1,c])
+			 .
